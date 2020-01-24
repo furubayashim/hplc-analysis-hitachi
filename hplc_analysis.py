@@ -12,7 +12,7 @@ import sys
 import matplotlib.pyplot as plt
 
 # change this if using different user/folder
-data_dir = "/usr/local/data"
+data_dir = "/usr/local/data/hplc/"
 
 # can give sample name file as argv
 if len(sys.argv) >1:
