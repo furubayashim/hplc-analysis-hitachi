@@ -25,7 +25,9 @@ sample_df = pd.read_excel(samplenamefile)
 # load parameter in the xls file
 sample_nos = [str(s) for s in sample_df['sample no'].values]
 sample_names = sample_df['name'].values
-expr_dir = sample_df.loc[0,'file directory'] +'/'
+dirname = sample_df.loc[0,'file directory']
+if type(dirname) == np.float64: dirname = str(int(dirname))
+expr_dir = dirname +'/'
 
 start_time = 2
 end_time = 18
@@ -110,6 +112,7 @@ if each_data == 'y':
             plt.xticks(np.arange(2,19,1))
             plt.xlabel('Time (min)')
             plt.ylabel('Absorbance')
+            plt.ylim([-0.005,0.05]) # might want to rm this
             plt.title(sample_no + '-' + sample_name)
 
         for n,(rt,series) in enumerate(stx_df_cut.iteritems()):
