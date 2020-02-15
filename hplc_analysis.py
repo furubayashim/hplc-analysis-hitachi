@@ -28,6 +28,7 @@ sample_names = sample_df['name'].values
 dirname = sample_df.loc[0,'file directory']
 if type(dirname) == np.float64: dirname = str(int(dirname))
 expr_dir = dirname +'/'
+sample_dir = sorted([f+'/' for f in os.listdir(data_dir+expr_dir) if not os.path.isfile(f)])
 
 start_time = 2
 end_time = 18
@@ -48,8 +49,9 @@ if not os.path.exists('fig'): os.mkdir('fig')
 
 # draw chromato for all samples in one fig ############################
 if all_chromato == 'y':
-    ctx_files = [sorted(glob.glob(data_dir+expr_dir+no+'/*.ctx')) for no in sample_nos]
-    ctx_files = [j for i in ctx_files for j in i]
+    # ctx_files = [sorted(glob.glob(data_dir+expr_dir+no+'/*.ctx')) for no in sample_nos]
+    # ctx_files = [j for i in ctx_files for j in i]
+    ctx_files = sorted(glob.glob(data_dir+expr_dir+'*/*.ctx'))
     chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[sample_names[n],'NaN']).iloc[:,:1] for n,file in enumerate(ctx_files)]
     chromato_df = pd.concat(chromato_dfs,axis=1)
     chromato_df_cut = chromato_df.loc[start_time:end_time]
@@ -58,7 +60,7 @@ if all_chromato == 'y':
 
     for n,(name,col) in enumerate(chromato_df_cut.iteritems()):
         time = chromato_df_cut.index.values
-        abs450 = col.values - 0.04 * n
+        abs450 = col.values - 0.1 * n
         axes[0].plot(time,abs450,label=name)
     axes[0].legend()
     axes[0].set_ylabel('Absorbance')
@@ -82,10 +84,10 @@ if all_chromato == 'y':
 
 # draw chromato/spec for each sample ############################
 if each_data == 'y':
-    for sample_no,sample_name in zip(sample_nos,sample_names):
+    for sample_no,sample_name,sample_dir in zip(sample_nos,sample_names,sample_dir):
         # load chromato files. Can import several ctx file
-        ctx_files = sorted(glob.glob(data_dir+expr_dir+sample_no+'/*.ctx'))
-        chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[os.path.basename(file)[:-4],'NaN']).iloc[:,:1] for file in ctx_files]
+        ctx_file = sorted(glob.glob(data_dir+expr_dir+sample_dir+'*.ctx'))
+        chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[os.path.basename(file)[:-4],'NaN']).iloc[:,:1] for file in ctx_file]
         chromato_df = pd.concat(chromato_dfs,axis=1)
         if chromato_df.index.min() < start_time:
             chromato_df_cut = chromato_df.loc[start_time:]
@@ -95,7 +97,7 @@ if each_data == 'y':
             chromato_df_cut = chromato_df_cut.loc[:end_time]
 
         # load stx files
-        stx_files = sorted(glob.glob(data_dir+expr_dir+sample_no+'/*.stx'),key=lambda x: float(os.path.basename(x[:-4])))
+        stx_files = sorted(glob.glob(data_dir+expr_dir+sample_dir+'*.stx'),key=lambda x: float(os.path.basename(x[:-4])))
         stx_dfs = [pd.read_csv(f,delimiter=';',skiprows=44).iloc[:,:1] for f in stx_files]
         stx_df = pd.concat(stx_dfs,axis=1)
         stx_df_cut = stx_df.loc[250:600]
@@ -112,7 +114,7 @@ if each_data == 'y':
             plt.xticks(np.arange(2,19,1))
             plt.xlabel('Time (min)')
             plt.ylabel('Absorbance')
-            plt.ylim([-0.005,0.05]) # might want to rm this
+            plt.ylim([-0.005,0.1]) # might want to rm this
             plt.title(sample_no + '-' + sample_name)
 
         for n,(rt,series) in enumerate(stx_df_cut.iteritems()):
