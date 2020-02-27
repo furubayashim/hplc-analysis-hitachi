@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 # script to draw PDA chromatogram & spectrum figure using Hitachi HPLC Chromaster stx/ctx files
-# created 2019/12/14
-# updated 2019/12/15 v2 added inputs. start/end times etc.
 
 import pandas as pd
 import numpy as np
@@ -49,8 +47,6 @@ if not os.path.exists('fig'): os.mkdir('fig')
 
 # draw chromato for all samples in one fig ############################
 if all_chromato == 'y':
-    # ctx_files = [sorted(glob.glob(data_dir+expr_dir+no+'/*.ctx')) for no in sample_nos]
-    # ctx_files = [j for i in ctx_files for j in i]
     ctx_files = sorted(glob.glob(data_dir+expr_dir+'*/*.ctx'))
     chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[sample_names[n],'NaN']).iloc[:,:1] for n,file in enumerate(ctx_files)]
     chromato_df = pd.concat(chromato_dfs,axis=1)
@@ -86,8 +82,8 @@ if all_chromato == 'y':
 if each_data == 'y':
     for sample_no,sample_name,sample_dir in zip(sample_nos,sample_names,sample_dir):
         # load chromato files. Can import several ctx file
-        ctx_file = sorted(glob.glob(data_dir+expr_dir+sample_dir+'*.ctx'))
-        chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[os.path.basename(file)[:-4],'NaN']).iloc[:,:1] for file in ctx_file]
+        ctx_files = sorted(glob.glob(data_dir+expr_dir+sample_dir+'*.ctx'))
+        chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[os.path.basename(file)[:-4],'NaN']).iloc[:,:1] for file in ctx_files]
         chromato_df = pd.concat(chromato_dfs,axis=1)
         if chromato_df.index.min() < start_time:
             chromato_df_cut = chromato_df.loc[start_time:]
@@ -111,7 +107,7 @@ if each_data == 'y':
             plt.subplot(3,1,1)
             plt.plot(time,abs450,label=name)
             plt.legend()
-            plt.xticks(np.arange(2,19,1))
+            plt.xticks(np.arange(start_time,end_time,1))
             plt.xlabel('Time (min)')
             plt.ylabel('Absorbance')
             plt.ylim([-0.005,0.1]) # might want to rm this
