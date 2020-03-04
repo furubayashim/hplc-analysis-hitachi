@@ -10,7 +10,7 @@ import sys
 import matplotlib.pyplot as plt
 
 # change this if using different user/folder
-data_dir = "/usr/local/data/hplc/"
+data_dir = "raw/"
 
 # can give sample name file as argv
 if len(sys.argv) >1:
@@ -20,14 +20,12 @@ else:
 
 sample_df = pd.read_excel(samplenamefile)
 
-# load parameter in the xls file
+# load parameter from the xls file
 sample_nos = [str(s) for s in sample_df['sample no'].values]
 sample_names = sample_df['name'].values
-dirname = sample_df.loc[0,'file directory']
-if type(dirname) == np.float64: dirname = str(int(dirname))
-expr_dir = dirname +'/'
-sample_dir = sorted([f+'/' for f in os.listdir(data_dir+expr_dir) if not os.path.isfile(f)])
+sample_dir = sorted([f+'/' for f in os.listdir(data_dir) if not os.path.isfile(f)])
 
+# Time range (x axis)
 start_time = 2
 end_time = 18
 if 'start time' in sample_df.columns:
@@ -35,19 +33,19 @@ if 'start time' in sample_df.columns:
 if 'end time' in sample_df.columns:
     end_time = sample_df['end time'].values[0]
 
-output_name = 'all_chromato'
-if 'all chromato output name' in sample_df.columns:
-    output_name = sample_df['all chromato output name'].values[0]
-
+# which chart to draw
 all_chromato = sample_df['all chromato'].values[0]
 each_data = sample_df['each data'].values[0]
 
-# output folder
-if not os.path.exists('fig'): os.mkdir('fig')
+# output folder and name
+if not os.path.exists('processed'): os.mkdir('processed')
+output_name = 'all_chromato'
+if 'output name' in sample_df.columns:
+    output_name = sample_df['output name'].values[0]
 
 # draw chromato for all samples in one fig ############################
 if all_chromato == 'y':
-    ctx_files = sorted(glob.glob(data_dir+expr_dir+'*/*.ctx'))
+    ctx_files = sorted(glob.glob(data_dir+'*/*.ctx'))
     chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[sample_names[n],'NaN']).iloc[:,:1] for n,file in enumerate(ctx_files)]
     chromato_df = pd.concat(chromato_dfs,axis=1)
     chromato_df_cut = chromato_df.loc[start_time:end_time]
@@ -76,13 +74,13 @@ if all_chromato == 'y':
     axes[1].set_xlim([start_time,end_time])
     axes[1].set_title('Height Normalized')
 
-    plt.savefig("fig/{}.pdf".format(output_name),bbox_inches = "tight");
+    plt.savefig("processed/{}.pdf".format(output_name),bbox_inches = "tight");
 
 # draw chromato/spec for each sample ############################
 if each_data == 'y':
     for sample_no,sample_name,sample_dir in zip(sample_nos,sample_names,sample_dir):
         # load chromato files. Can import several ctx file
-        ctx_files = sorted(glob.glob(data_dir+expr_dir+sample_dir+'*.ctx'))
+        ctx_files = sorted(glob.glob(data_dir+sample_dir+'*.ctx'))
         chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[os.path.basename(file)[:-4],'NaN']).iloc[:,:1] for file in ctx_files]
         chromato_df = pd.concat(chromato_dfs,axis=1)
         if chromato_df.index.min() < start_time:
@@ -93,7 +91,7 @@ if each_data == 'y':
             chromato_df_cut = chromato_df_cut.loc[:end_time]
 
         # load stx files
-        stx_files = sorted(glob.glob(data_dir+expr_dir+sample_dir+'*.stx'),key=lambda x: float(os.path.basename(x[:-4])))
+        stx_files = sorted(glob.glob(data_dir+sample_dir+'*.stx'),key=lambda x: float(os.path.basename(x[:-4])))
         stx_dfs = [pd.read_csv(f,delimiter=';',skiprows=44).iloc[:,:1] for f in stx_files]
         stx_df = pd.concat(stx_dfs,axis=1)
         stx_df_cut = stx_df.loc[250:600]
@@ -110,7 +108,9 @@ if each_data == 'y':
             plt.xticks(np.arange(start_time,end_time,1))
             plt.xlabel('Time (min)')
             plt.ylabel('Absorbance')
-            plt.ylim([-0.005,0.1]) # might want to rm this
+            ymax = chromato_df.loc[1.5:,'475'].values.max()
+            if ymax < 0.01: ymax = chromato_df.loc[:,'475'].values.max()
+            plt.ylim([-(ymax*0.05),ymax + ymax*0.05])
             plt.title(sample_no + '-' + sample_name)
 
         for n,(rt,series) in enumerate(stx_df_cut.iteritems()):
@@ -125,4 +125,4 @@ if each_data == 'y':
 
         plt.tight_layout(pad=-0.1);
 
-        plt.savefig('fig/'+sample_no+'-'+sample_name+'.pdf',bbox_inches = "tight");
+        plt.savefig('processed/'+sample_no+'-'+sample_name+'.pdf',bbox_inches = "tight");
