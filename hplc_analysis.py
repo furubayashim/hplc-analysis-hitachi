@@ -20,7 +20,7 @@ else:
 
 sample_df = pd.read_excel(samplenamefile)
 
-# load parameter from the xls file
+### load parameter from the xls file ####################################
 sample_nos = [str(s) for s in sample_df['sample no'].values]
 sample_names = sample_df['name'].values
 sample_dir = sorted([f+'/' for f in os.listdir(data_dir) if not os.path.isfile(f)])
@@ -43,7 +43,7 @@ output_name = 'all_chromato'
 if 'output name' in sample_df.columns:
     output_name = sample_df['output name'].values[0]
 
-# draw chromato for all samples in one fig ############################
+### draw chromato for all samples in one fig ############################
 if all_chromato == 'y':
     ctx_files = sorted(glob.glob(data_dir+'*/*.ctx'))
     chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[sample_names[n],'NaN']).iloc[:,:1] for n,file in enumerate(ctx_files)]
@@ -76,7 +76,7 @@ if all_chromato == 'y':
 
     plt.savefig("processed/{}.pdf".format(output_name),bbox_inches = "tight");
 
-# draw chromato/spec for each sample ############################
+### draw chromato/spec for each sample ############################
 if each_data == 'y':
     for sample_no,sample_name,sample_dir in zip(sample_nos,sample_names,sample_dir):
         # load chromato files. Can import several ctx file
@@ -94,11 +94,15 @@ if each_data == 'y':
         stx_files = sorted(glob.glob(data_dir+sample_dir+'*.stx'),key=lambda x: float(os.path.basename(x[:-4])))
         stx_dfs = [pd.read_csv(f,delimiter=';',skiprows=44).iloc[:,:1] for f in stx_files]
         stx_df = pd.concat(stx_dfs,axis=1)
-        stx_df_cut = stx_df.loc[250:600]
+            # stx_df is the dataframe of the abs spectrum of each peak.
+            # index = 200-650 (nm)
+            # column name = str of time (min)
+        stx_df_cut = stx_df.loc[250:600] # select 250-600 nm
 
         # draw figure
         fig = plt.figure(figsize=[6,8])
 
+        # draw chromatogram
         for name,col in chromato_df_cut.iteritems():
             time = chromato_df_cut.index.values
             abs450 = col.values
@@ -108,20 +112,22 @@ if each_data == 'y':
             plt.xticks(np.arange(start_time,end_time,1))
             plt.xlabel('Time (min)')
             plt.ylabel('Absorbance')
-            ymax = chromato_df.loc[1.5:,'475'].values.max()
-            if ymax < 0.01: ymax = chromato_df.loc[:,'475'].values.max()
-            plt.ylim([-(ymax*0.05),ymax + ymax*0.05])
+            ymax = chromato_df.loc[start_time:end_time,'475'].values.max()
+            #if ymax < 0.005: ymax = chromato_df.loc[:,'475'].values.max()
+            plt.ylim([-(ymax*0.2),ymax + ymax*0.05])
             plt.title(sample_no + '-' + sample_name)
 
+        # draw abs spectrum
         for n,(rt,series) in enumerate(stx_df_cut.iteritems()):
             wavelength = series.index.values
             absorbance = series.values
+            abs_max = str(int(series.idxmax()))
             plt.subplot(6,3,7+n)
             plt.plot(wavelength,absorbance,label=rt)
             plt.xlim([250,600])
             plt.xticks(np.arange(300,700,100))
             plt.ylim([series.min(),series.max()])
-            plt.title(rt[:-2]+' min')
+            plt.title('{} min (λmax: {} nm)'.format(rt[:-2],abs_max))
 
         plt.tight_layout(pad=-0.1);
 
