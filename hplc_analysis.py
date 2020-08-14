@@ -45,7 +45,7 @@ if 'output name' in sample_df.columns:
 
 ### draw chromato for all samples in one fig ############################
 if all_chromato == 'y':
-    ctx_files = sorted(glob.glob(data_dir+'*/*.ctx'))
+    ctx_files = sorted(glob.glob(data_dir+'*/450.ctx'))
     chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[sample_names[n],'NaN']).iloc[:,:1] for n,file in enumerate(ctx_files)]
     chromato_df = pd.concat(chromato_dfs,axis=1)
     chromato_df_cut = chromato_df.loc[start_time:end_time]
@@ -54,8 +54,8 @@ if all_chromato == 'y':
 
     for n,(name,col) in enumerate(chromato_df_cut.iteritems()):
         time = chromato_df_cut.index.values
-        abs450 = col.values - 0.1 * n
-        axes[0].plot(time,abs450,label=name)
+        abs = col.values - 0.1 * n
+        axes[0].plot(time,abs,label=name)
     axes[0].legend()
     axes[0].set_ylabel('Absorbance')
     axes[0].set_xlabel('Time (min)')
@@ -64,9 +64,9 @@ if all_chromato == 'y':
     axes[0].set_title('Height as it is')
 
     for n,(name,col) in enumerate(chromato_df_cut.iteritems()):
-        abs450 = col.values / np.nanmax(col.values) - 1.1 * n
+        abs = col.values / np.nanmax(col.values) - 1.1 * n
         time = chromato_df_cut.index.values
-        axes[1].plot(time,abs450,label=name)
+        axes[1].plot(time,abs,label=name)
     axes[1].legend()
     axes[1].set_ylabel('Absorbance (Normalized)')
     axes[1].set_xlabel('Time (min)')
@@ -100,29 +100,34 @@ if each_data == 'y':
         stx_df_cut = stx_df.loc[250:600] # select 250-600 nm
 
         # draw figure
-        fig = plt.figure(figsize=[6,8])
+        fig = plt.figure(figsize=[6,16])
 
         # draw chromatogram
+        ymax = 0
+        ymin = 0
         for name,col in chromato_df_cut.iteritems():
             time = chromato_df_cut.index.values
-            abs450 = col.values
-            plt.subplot(3,1,1)
-            plt.plot(time,abs450,label=name)
-            plt.legend()
-            plt.xticks(np.arange(start_time,end_time,1))
-            plt.xlabel('Time (min)')
-            plt.ylabel('Absorbance')
-            ymax = chromato_df.loc[start_time:end_time,'475'].values.max()
-            #if ymax < 0.005: ymax = chromato_df.loc[:,'475'].values.max()
-            plt.ylim([-(ymax*0.2),ymax + ymax*0.05])
-            plt.title(sample_no + '-' + sample_name)
+            abs = col.values
+            plt.subplot(6,1,1)
+                #109: MatplotlibDeprecationWarning: Adding an axes using the same arguments as a previous axes currently reuses the earlier instance.  In a future version, a new instance will always be created and returned.  Meanwhile, this warning can be suppressed, and the future behavior ensured, by passing a unique label to each axes instance.
+            plt.plot(time,abs,label=name)
+            ymaxtemp = chromato_df.loc[start_time:end_time,name].values.max()
+            ymintemp = chromato_df.loc[start_time:end_time,name].values.min()
+            if ymaxtemp > ymax: ymax = ymaxtemp
+            if ymintemp < ymin: ymin = ymintemp
+        plt.legend()
+        plt.xticks(np.arange(start_time,end_time,1))
+        plt.xlabel('Time (min)')
+        plt.ylabel('Absorbance')
+        plt.ylim([ymin + ymin*0.05,ymax + ymax*0.05])
+        plt.title(sample_no + '-' + sample_name)
 
         # draw abs spectrum
         for n,(rt,series) in enumerate(stx_df_cut.iteritems()):
             wavelength = series.index.values
             absorbance = series.values
             abs_max = str(int(series.idxmax()))
-            plt.subplot(6,3,7+n)
+            plt.subplot(12,3,7+n)
             plt.plot(wavelength,absorbance,label=rt)
             plt.xlim([250,600])
             plt.xticks(np.arange(300,700,100))
