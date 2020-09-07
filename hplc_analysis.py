@@ -45,7 +45,7 @@ if 'output name' in sample_df.columns:
 
 ### draw chromato for all samples in one fig ############################
 if all_chromato == 'y':
-    ctx_files = sorted(glob.glob(data_dir+'*/450.ctx'))
+    ctx_files = sorted(glob.glob(data_dir+'*/*.ctx'))
     chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[sample_names[n],'NaN']).iloc[:,:1] for n,file in enumerate(ctx_files)]
     chromato_df = pd.concat(chromato_dfs,axis=1)
     chromato_df_cut = chromato_df.loc[start_time:end_time]
