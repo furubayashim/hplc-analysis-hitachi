@@ -23,7 +23,7 @@ sample_df = pd.read_excel(samplenamefile)
 ### load parameter from the xls file ####################################
 sample_nos = [str(s) for s in sample_df['sample no'].values]
 sample_names = sample_df['name'].values
-sample_dir = sorted([f+'/' for f in os.listdir(data_dir) if not os.path.isfile(f)])
+sample_dir = sorted([f+'/' for f in os.listdir(data_dir) if not os.path.isfile(f)],key=lambda x:int(x[:-1]))
 
 # Time range (x axis)
 start_time = 2
@@ -45,7 +45,7 @@ if 'output name' in sample_df.columns:
 
 ### draw chromato for all samples in one fig ############################
 if all_chromato == 'y':
-    ctx_files = sorted(glob.glob(data_dir+'*/*.ctx'))
+    ctx_files = sorted(glob.glob(data_dir+'*/*.ctx'),key=lambda x: (int(x.split('/')[1]),int(x.split('/')[2][:-4]))) #ごちゃごちゃ
     chromato_dfs = [pd.read_csv(file,skiprows=38,delimiter=';',header=None,names=[sample_names[n],'NaN']).iloc[:,:1] for n,file in enumerate(ctx_files)]
     chromato_df = pd.concat(chromato_dfs,axis=1)
     chromato_df_cut = chromato_df.loc[start_time:end_time]
