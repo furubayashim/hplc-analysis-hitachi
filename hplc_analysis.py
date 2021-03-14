@@ -16,7 +16,7 @@ data_dir = "raw/"
 if len(sys.argv) >1:
     samplenamefile = sys.argv[1]
 else:
-    samplenamefile = 'sample_info.xlsx'
+    samplenamefile = 'sampletable.xlsx'
 
 sample_df = pd.read_excel(samplenamefile)
 
